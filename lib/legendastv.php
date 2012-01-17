@@ -65,7 +65,7 @@ class LegendasTV {
 			throw new Exception('Idioma inválido');
 		}
 	
-		list($page) = self::curl(self::$resource, 'POST', array(
+		list($page) = self::request(self::$resource, 'POST', array(
 			'txtLegenda'   => $search,
 			'int_idioma'   => self::$languages[$lang],
 			'selTipo'      => self::$types[$type],
@@ -103,7 +103,15 @@ class LegendasTV {
 		
 	}
 
-	public static function curl($url, $method = 'GET', $params = array())
+	/**
+	 * Efetua uma requisição ao site do Legendas.TV
+	 *
+	 * @param  string
+	 * @param  string GET (default) ou POST
+	 * @param  array  Query a ser enviada por post 
+	 * @return array  Array com o Conteúdo da página, info do curl e header
+	 */
+	public static function request($url, $method = 'GET', $params = array())
 	{
 		/* Inicializa o cookie. Pegaremos o sessid depois da primeira consulta */
 		static $cookie;
@@ -145,21 +153,42 @@ class Legenda {
 		$this->data = $data;
 	}
 
+	/**
+	 * Efetua a requisição de um arquivo ao servidor
+	 *
+	 * @param  string
+	 * @param  bool    true se quer apenas o link para o arquivo
+	 * @return string  Arquivo ou link para o arquivo
+	 */
+	public function download($filename = null, $onlyLink = false)
+	{
+		list($file, $info) = LegendasTV::request("http://legendas.tv/info.php?c=1&d={$this->id}");
+		
+		if (!$onlyLink)
+		{
+			if ($filename === null) $filename = basename($info['url']);
+			$this->data['download_link'] = $info['url'];
+			file_put_contents($filename, $file);
+			return true;
+		}
+		else {
+			return $info['url'];
+		}
+	}
+
 	public function __get($prop)
 	{
+		if ($prop == 'download_link' and !isset($this->data['download_link']))
+		{
+			$this->data['download_link'] = $this->download(null, true);
+		}
+
 		if ( ! isset($this->data[$prop]))
 		{
 			throw new InvalidArgumentException;
 		}
 
 		return $this->data[$prop];
-	}
-
-	public function download()
-	{
-		list($file, $info) = LegendasTV::curl("http://legendas.tv/info.php?c=1&d={$this->id}");
-		$filename = basename($info['url']);
-		file_put_contents($filename, $file);
 	}
 
 }
