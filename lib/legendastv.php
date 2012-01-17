@@ -129,7 +129,6 @@ class LegendasTV {
 		static $cookie;
 		if ($cookie === null) $cookie = 'Login='.self::$login.';Auth='.self::$auth;
 
-		echo "loading {$url}\n";
 		$ch = curl_init($url);
 		curl_setopt($ch, CURLOPT_COOKIESESSION, true);
 		curl_setopt($ch, CURLOPT_COOKIE, $cookie);
