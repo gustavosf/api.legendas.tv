@@ -16,8 +16,8 @@ class LegendasTV {
 	 * O campo auth deve ser preenchido com a hash md5 da senha de acesso ao site
 	 * @see config
 	 */
-	private static $login;
-	private static $auth;
+	public static $login;
+	public static $auth;
 	
 	private static $resource = 'http://legendas.tv/index.php?opcao=buscarlegenda';
 
@@ -65,14 +65,13 @@ class LegendasTV {
 			throw new Exception('Idioma inválido');
 		}
 	
-		$page = self::request(array(
+		list($page) = self::curl(self::$resource, 'POST', array(
 			'txtLegenda'   => $search,
 			'int_idioma'   => self::$languages[$lang],
 			'selTipo'      => self::$types[$type],
 			'btn_buscar.x' => 0,
 			'btn_buscar.y' => 0,
 		));
-
 		$page = self::parse($page);
 	
 		return $page;
@@ -104,27 +103,36 @@ class LegendasTV {
 		
 	}
 
-	private static function request(Array $content)
+	public static function curl($url, $method = 'GET', $params = array())
 	{
-		$content = http_build_query($content);
-		$content_length = strlen($content);
-		$cookie  = http_build_query(array(
-			'Login' => self::$login,
-			'Auth'  => self::$auth,
-		), '', ';');
+		/* Inicializa o cookie. Pegaremos o sessid depois da primeira consulta */
+		static $cookie;
+		if ($cookie === null) $cookie = 'Login='.self::$login.';Auth='.self::$auth;
 
-		$opts = array('http' => array(
-			'method'  => 'POST',
-			'header'  => "Content-type: application/x-www-form-urlencoded\r\n".
-			             "Connection: close\r\n".
-			             "Content-Length: {$content_length}\r\n".
-			             "Cookie: {$cookie}\r\n",
-			'content' => $content,
-		));
-		$context = stream_context_create($opts);
-		$result = file_get_contents(self::$resource, false, $context);
+		echo "loading {$url}\n";
+		$ch = curl_init($url);
+		curl_setopt($ch, CURLOPT_COOKIESESSION, true);
+		curl_setopt($ch, CURLOPT_COOKIE, $cookie);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+		curl_setopt($ch, CURLOPT_HEADER, true); 
+		curl_setopt($ch, CURLOPT_POST, $method == 'POST' ? count($params) : false);
+		curl_setopt($ch, CURLOPT_POSTFIELDS, $method == 'POST' ? http_build_query($params) : false);
+		$content = curl_exec($ch);
+		$info    = curl_getinfo($ch);
 
-		return $result;
+		preg_match('/^(.*?)\r\n\r\n(.*?)$/msU', $content, $match);
+		$header = $match[1];
+		$content = $match[2];
+
+		/* Armazenamos o PHPSESSID no cookie */
+		if (preg_match('/(PHPSESSID=.*?);/', $header, $match))
+		{
+			$cookie = 'Login='.self::$login.';Auth='.self::$auth.';'.$match[1];
+		}
+
+		curl_close($ch);
+		return array($content, $info, $header);
 	}
 }
 
@@ -149,8 +157,9 @@ class Legenda {
 
 	public function download()
 	{
-		$sub = file_get_contents("http://legendas.tv/info.php?c=1&d={$this->id}");
-		file_put_contents($this->id.'.rar', $this);
+		list($file, $info) = LegendasTV::curl("http://legendas.tv/info.php?c=1&d={$this->id}");
+		$filename = basename($info['url']);
+		file_put_contents($filename, $file);
 	}
 
 }
