@@ -73,10 +73,38 @@ class LegendasTV {
 			'btn_buscar.y' => 0,
 		));
 
+		$page = self::parse($page);
+	
 		return $page;
 	}
 
-	public static function request(Array $content)
+	private static function parse($page)
+	{
+		
+		$regex = "/gpop\('(.*)','(?P<title_pt>.*)','(?P<filename>.*)','(?P<cds>.*)','(?P<fps>.*)','(?P<size>.*)','(?P<downloads>.*)',.*,'(?P<submited>.*)'\).*abredown\('(?P<id>.*)'\)/";
+		preg_match_all($regex, $page, $match);
+		
+		$parsed = array();
+		foreach ($match[0] as $key => $m)
+		{
+			$parsed[] = new Legenda(array(
+				'title' => $match[1][$key],
+				'title_pt' => $match[2][$key],
+				'filename' => $match[3][$key],
+				'cds' => $match[4][$key],
+				'fps' => $match[5][$key],
+				'size' => $match[6][$key],
+				'downloads' => $match[7][$key],
+				'submited' => $match[8][$key],
+				'id' => $match[9][$key]
+			));
+		}
+				
+		return $parsed;
+		
+	}
+
+	private static function request(Array $content)
 	{
 		$content = http_build_query($content);
 		$content_length = strlen($content);
@@ -98,4 +126,25 @@ class LegendasTV {
 
 		return $result;
 	}
+}
+
+class Legenda {
+	
+	private $data = array();
+
+	public function __construct($data)
+	{
+		$this->data = $data;
+	}
+
+	public function __get($prop)
+	{
+		if ( ! isset($this->data[$prop]))
+		{
+			throw new InvalidArgumentException;
+		}
+
+		return $this->data[$prop];
+	}
+
 }
