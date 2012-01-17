@@ -53,7 +53,16 @@ class LegendasTV {
 		self::$auth = md5($senha);
 	}
 
-
+	/**
+	 * Efetua uma busca por legendas no site do legendas.tv
+	 * @param  string  O conteúdo da busca
+	 * @param  string  O tipo de busca (release, filme ou usuario)
+	 * @param  string  A linǵuagem da legenda
+	 * @return array
+	 * @todo   Está pegando apenas a primeira página de legendas. Talvez dê
+	 *         para buscar outras sob demanda. Centralizar o parse de outras
+	 *         páginas aqui também.
+	 */
 	public static function search($search, $type = 'release', $lang = 'pt-br')
 	{
 		if (!isset(self::$types[$type]))
@@ -72,14 +81,19 @@ class LegendasTV {
 			'btn_buscar.x' => 0,
 			'btn_buscar.y' => 0,
 		));
-		$page = self::parse($page);
+		$subtitles = self::parse($page);
 	
-		return $page;
+		return $subtitles;
 	}
 
+	/**
+	 * Efetua o parse de uma página de listagem de legendas
+	 * @param  string
+	 * @return array  Todas as legendas identificadas
+	 * @todo   Centralizar o parse de outras páginas aqui também.
+	 */
 	private static function parse($page)
 	{
-		
 		$regex = "/gpop\('(.*)','(?P<title_pt>.*)','(?P<filename>.*)','(?P<cds>.*)','(?P<fps>.*)','(?P<size>.*)','(?P<downloads>.*)',.*,'(?P<submited>.*)'\).*abredown\('(?P<id>.*)'\)/";
 		preg_match_all($regex, $page, $match);
 		
@@ -100,12 +114,10 @@ class LegendasTV {
 		}
 				
 		return $parsed;
-		
 	}
 
 	/**
 	 * Efetua uma requisição ao site do Legendas.TV
-	 *
 	 * @param  string
 	 * @param  string GET (default) ou POST
 	 * @param  array  Query a ser enviada por post 
@@ -146,6 +158,9 @@ class LegendasTV {
 
 class Legenda {
 	
+	/**
+	 * Dados gerais da legenda
+	 */
 	private $data = array();
 
 	public function __construct($data)
@@ -155,7 +170,6 @@ class Legenda {
 
 	/**
 	 * Efetua a requisição de um arquivo ao servidor
-	 *
 	 * @param  string
 	 * @param  bool    true se quer apenas o link para o arquivo
 	 * @return string  Arquivo ou link para o arquivo
@@ -176,6 +190,13 @@ class Legenda {
 		}
 	}
 
+	/**
+	 * Método mágico para retornar informações da Legenda
+	 * @param  string
+	 * @return mixed
+	 * @todo   Buscar informações extras por demanda através do link
+	 *         info.php sem o parâmetro c
+	 */
 	public function __get($prop)
 	{
 		if ($prop == 'download_link' and !isset($this->data['download_link']))
