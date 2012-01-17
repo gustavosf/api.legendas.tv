@@ -147,4 +147,10 @@ class Legenda {
 		return $this->data[$prop];
 	}
 
+	public function download()
+	{
+		$sub = file_get_contents("http://legendas.tv/info.php?c=1&d={$this->id}");
+		file_put_contents($this->id.'.rar', $this);
+	}
+
 }
