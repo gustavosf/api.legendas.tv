@@ -3,11 +3,11 @@
 
 /* Exemplo de shellscript para download de legendas usando a classe LegendasTV */
 
-require '../lib/legendastv.php';
-LegendasTV::config('seu_usuario', 'sua_senha');
+require 'Console/Getopt.php';
+$opt = new Console_Getopt;
 
-/* Pega a consulta pelo argv */
-array_shift($argv); $search = implode(' ', $argv);
+require dirname(__FILE__).'/../lib/legendastv.php';
+LegendasTV::config('sega', 'falkland');
 
 /**
  * Função para emular o famoso readln :P
@@ -19,9 +19,21 @@ function readln()
 		return $ln;
 }
 
-/* Começa a treta :D */
+function &condense_arguments($params)
+{
+    $new_params = array();
+    foreach ($params[0] as $param) {
+        $new_params[$param[0]] = $param[1];
+    }
+    return $new_params;
+}
 
-$subtitles = LegendasTV::search($search);
+$options = $opt->getopt($opt->readPHPArgv(), 'l:');
+$search = implode(" ", $options[1]);
+$options = condense_arguments($options);
+
+/* Começa a treta :D */
+$subtitles = LegendasTV::search($search, 'release', @$option['l'] ?: 'pt-br');
 
 if (count($subtitles) > 1)
 {
@@ -45,7 +57,7 @@ else
 	$subtitle = $subtitles[0]; // A única :)
 }
 
-echo "Baixando {$subtitle->filename}...\n";
+echo "Baixando {$subtitle->download_link}...\n";
 $subtitle->download();
 echo "Arquivo ".basename($subtitle->download_link)." baixado!\n";
 
