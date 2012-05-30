@@ -33,7 +33,7 @@ $search = implode(" ", $options[1]);
 $options = condense_arguments($options);
 
 /* Começa a treta :D */
-$subtitles = LegendasTV::search($search, 'release', @$option['l'] ?: 'pt-br');
+$subtitles = LegendasTV::search($search, 'release', @$options['l'] ?: 'pt-br');
 
 if (count($subtitles) > 1)
 {
@@ -52,10 +52,15 @@ if (count($subtitles) > 1)
 
 	$subtitle = $subtitles[$option];
 }
-else
+elseif ($subtitles)
 {
 	$subtitle = $subtitles[0]; // A única :)
 }
+else
+{
+	die('Nenhuma legenda encontrada');
+}
+
 
 echo "Baixando {$subtitle->download_link}...\n";
 $subtitle->download();
