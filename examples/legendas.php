@@ -3,11 +3,11 @@
 
 /* Exemplo de shellscript para download de legendas usando a classe LegendasTV */
 
-require 'Console/Getopt.php';
+require dirname(__FILE__).'/vendor/Getopt.php';
 $opt = new Console_Getopt;
 
 require dirname(__FILE__).'/../lib/legendastv.php';
-LegendasTV::config('sega', 'falkland');
+LegendasTV::config('seu_login', 'sua_senha');
 
 /**
  * Função para emular o famoso readln :P
