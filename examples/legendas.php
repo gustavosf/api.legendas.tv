@@ -7,7 +7,7 @@ require dirname(__FILE__).'/vendor/Getopt.php';
 $opt = new Console_Getopt;
 
 require dirname(__FILE__).'/../lib/legendastv.php';
-LegendasTV::config('seu_login', 'sua_senha');
+LegendasTV::config('sega', 'falkland');
 
 /**
  * Função para emular o famoso readln :P
@@ -28,14 +28,14 @@ function &condense_arguments($params)
     return $new_params;
 }
 
-$options = $opt->getopt($opt->readPHPArgv(), 'l:');
+$options = $opt->getopt($opt->readPHPArgv(), 'l:f');
 $search = implode(" ", $options[1]);
 $options = condense_arguments($options);
 
 /* Começa a treta :D */
 $subtitles = LegendasTV::search($search, 'release', @$options['l'] ?: 'pt-br');
 
-if (count($subtitles) > 1)
+if (count($subtitles) > 1 and ! array_key_exists('f', $options))
 {
 	echo "Qual das legendas abaixo desejas baixar?\n\n";
 	foreach ($subtitles as $id => $subtitle)
