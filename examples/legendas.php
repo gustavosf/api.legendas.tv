@@ -2,9 +2,7 @@
 <?php
 
 /* Exemplo de shellscript para download de legendas usando a classe LegendasTV */
-
 require dirname(__FILE__).'/../lib/legendastv.php';
-LegendasTV::config('sega', 'falkland');
 
 /**
  * Função para emular o famoso readln :P
@@ -16,18 +14,35 @@ function readln()
 		return $ln;
 }
 
-$options = getopt('l:f', array('first'));
+/* tratamento de argumentos
+ * l          language
+ * f, first   baixa o primeiro link
+ */
+$options = getopt('l:fd', array('first'));
 $search = implode(" ", array_slice($argv, sizeof($options) + 1));
 
 /* Começa a treta :D */
-$subtitles = LegendasTV::search($search, 'release', @$options['l'] ?: 'pt-br');
+$subtitles = LegendasTV::search($search, @$options['l'] ?: 'Qualquer idioma');
+
+if (array_key_exists('d', $options))
+{ # caso flag "d" esteja ativada retorna apenas os destaques 
+	$subtitles = array_filter($subtitles, function($subtitle) { return $subtitle->destaque; });
+}
+else
+{ # caso contrário, ordena por destaque e downloads
+	usort($subtitles, function($a, $b) {
+		if ($a->destaque and !$b->destaque) return -1;
+		if ($b->destaque and !$a->destaque) return 1;
+		return $a->downloads > $b->downloads ? -1 : 1;
+	});
+}
 
 if (count($subtitles) > 1 and ! (array_key_exists('f', $options) or array_key_exists('first', $options)))
 {
 	echo "Qual das legendas abaixo desejas baixar?\n\n";
 	foreach ($subtitles as $id => $subtitle)
 	{
-		echo "[{$id}] {$subtitle->filename}\n";
+		echo sprintf("[%".(count($subtitles) > 10 ? 2 : 1)."d] %s %s (%d/dl %s)\n", $id, $subtitle->destaque ? '*' : ' ', $subtitle->arquivo, $subtitle->downloads, $subtitle->idioma);
 	}
 	$option = (int)readln();
 
@@ -48,9 +63,8 @@ else
 	die('Nenhuma legenda encontrada');
 }
 
-
-echo "Baixando {$subtitle->download_link}...\n";
-$subtitle->download();
-echo "Arquivo ".basename($subtitle->download_link)." baixado!\n";
+echo "Baixando {$subtitle->arquivo}...\n";
+$filename = $subtitle->download();
+echo "Arquivo {$filename} baixado!\n";
 
 ?>
