@@ -155,7 +155,7 @@ class Legenda {
 		preg_match('/filename="(.*?)"/', $header, $file);
 		if ($filename === null) $filename = $file[1];
 		file_put_contents($filename, $file);
-		return true;
+		return $filename;
 	}
 
 	/**
