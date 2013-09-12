@@ -4,82 +4,66 @@
  * Classe para pesquisa e download de legendas do Legendas.tv
  *
  * Uso (temporariamente):
- *   LegendasTV::config($meu_login, $minha_senha);
  *   LegendasTV::search('The Big Bang Theory s05e01');
+ *   LegendasTV::search('The Big Bang Theory s05e01', 'Inglês');
  */
 class LegendasTV {
 
 	/**
-	 * Configuração de acesso ao site
-	 * Você pode preencher estes dois campos com valores predefinidos para evitar a 
-	 * necessidade do LegendasTV::config
-	 * O campo auth deve ser preenchido com a hash md5 da senha de acesso ao site
-	 * @see config
+	 * Alguns dos termos de busca identificados:
+	 *
+	 * termo:%s     - Busca textual
+	 * id_idioma:%d - Filtro por idioma
+	 * id_filme:%d  - Busca por id específico
+	 * page:%d      - Paginação nos resultados
 	 */
-	public static $login;
-	public static $auth;
-	
-	private static $resource = 'http://legendas.tv/index.php?opcao=buscarlegenda';
+	private static $resource = 'http://legendas.tv/util/carrega_legendas_busca/';
 
 	/**
 	 * Tradução para as diferentes linguagens que podem ser pesquisadas
 	 */
 	protected static $languages = array(
-		'pt-br' => 1,
-		'pt'    => 10,
-		'en'    => 2,
-		'es'    => 3,
-		'other' => 100,
-		'all'   => 99,
+		'Qualquer idioma' => '', # default
+		'Português-BR' => 1,
+		'Inglês' => 2,
+		'Espanhol' => 3,
+		'Português-PT' => 10,
+		'Alemão' => 5,
+		'Árabe' => 11,
+		'Búlgaro' => 15,
+		'Checo' => 12,
+		'Chinês' => 13,
+		'Coreano' => 14,
+		'Dinamarquês' => 7,
+		'Francês' => 4,
+		'Italiano' => 16,
+		'Japonês' => 6,
+		'Norueguês' => 8,
+		'Polonês' => 17,
+		'Sueco' => 9,
 	);
-
-	/** 
-	 * Tradução para os tipos de pesquisa no site
-	 */
-	protected static $types = array(
-		'release' => 1,
-		'filme'   => 2,
-		'usuario' => 3,
-	);
-
-	/**
-	 * Configura as credenciais do usuário para acesso ao site
-	 * @param  string
-	 * @param  string
-	 */
-	public static function config($login, $senha)
-	{
-		self::$login = $login;
-		self::$auth = md5($senha);
-	}
 
 	/**
 	 * Efetua uma busca por legendas no site do legendas.tv
 	 * @param  string  O conteúdo da busca
-	 * @param  string  O tipo de busca (release, filme ou usuario)
 	 * @param  string  A linǵuagem da legenda
 	 * @return array
-	 * @todo   Está pegando apenas a primeira página de legendas. Talvez dê
-	 *         para buscar outras sob demanda. Centralizar o parse de outras
-	 *         páginas aqui também.
+	 * @todo   Rolar a oaginação nos resultados da busca
+	 *         Retornar uma coleção de legendas, não um array, com métodos
+	 *         para ordenar por campos como por exemplo, destaque ou downloads
 	 */
-	public static function search($search, $type = 'release', $lang = 'pt-br')
+	public static function search($search, $lang = 'Qualquer idioma')
 	{
-		if (!isset(self::$types[$type]))
-		{
-			throw new Exception('Tipo de legenda inválido');
-		}
 		if (!isset(self::$languages[$lang]))
 		{
 			throw new Exception('Idioma inválido');
 		}
 	
-		list($page) = self::request(self::$resource, 'POST', array(
-			'txtLegenda'   => $search,
-			'int_idioma'   => self::$languages[$lang],
-			'selTipo'      => self::$types[$type],
-			'btn_buscar.x' => 0,
-			'btn_buscar.y' => 0,
+		list($page) = self::request(self::$resource, true, array(
+			'termo'     => $search,
+			'page'      => 1,
+			'id_filme'  => null,
+			'id_idioma' => self::$languages[$lang],
 		));
 		$subtitles = self::parse($page);
 	
@@ -94,22 +78,23 @@ class LegendasTV {
 	 */
 	private static function parse($page)
 	{
-		$regex = "/gpop\('(.*)','(?P<title_pt>.*)','(?P<filename>.*)','(?P<cds>.*)','(?P<fps>.*)','(?P<size>.*)','(?P<downloads>.*)',.*,'(?P<submited>.*)'\).*abredown\('(?P<id>.*)'\)/";
+		$regex = '/div class="(.*?)">.*?<a href="(.*?)">(.*?)<.*?p class="data">(\d+?) downloads, nota (\d+?), enviado por .*?>(.*?)<\/a> em (.*?) <\/p>.*?<.*?alt="(.*?)".*?<\/div>/';
 		preg_match_all($regex, $page, $match);
-		
+
 		$parsed = array();
 		foreach ($match[0] as $key => $m)
 		{
+			$id = explode('/', $match[2][$key]);
 			$parsed[] = new Legenda(array(
-				'title' => $match[1][$key],
-				'title_pt' => $match[2][$key],
-				'filename' => $match[3][$key],
-				'cds' => $match[4][$key],
-				'fps' => $match[5][$key],
-				'size' => $match[6][$key],
-				'downloads' => $match[7][$key],
-				'submited' => $match[8][$key],
-				'id' => $match[9][$key]
+				'destaque'  => $match[1][$key] == 'destaque',
+				'id'        => $id[2],
+				'link'      => $match[2][$key],
+				'arquivo'   => $match[3][$key],
+				'downloads' => $match[4][$key],
+				'nota'      => $match[5][$key],
+				'uploader'  => $match[6][$key],
+				'data'      => $match[7][$key],
+				'idioma'    => $match[8][$key],
 			));
 		}
 				
@@ -123,32 +108,24 @@ class LegendasTV {
 	 * @param  array  Query a ser enviada por post 
 	 * @return array  Array com o Conteúdo da página, info do curl e header
 	 */
-	public static function request($url, $method = 'GET', $params = array())
+	public static function request($url, $xml_http_request = false, $params = array())
 	{
-		/* Inicializa o cookie. Pegaremos o sessid depois da primeira consulta */
-		static $cookie;
-		if ($cookie === null) $cookie = 'Login='.self::$login.';Auth='.self::$auth;
+		$query = array_filter(array_map(function($k, $s) {
+			return $s ? $k.':'.urlencode($s) : null;
+		}, array_keys($params), $params));
+		$url = $url.implode('/', $query);
 
 		$ch = curl_init($url);
-		curl_setopt($ch, CURLOPT_COOKIESESSION, true);
-		curl_setopt($ch, CURLOPT_COOKIE, $cookie);
+		curl_setopt($ch, CURLOPT_HEADER, true); 
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-		curl_setopt($ch, CURLOPT_HEADER, true); 
-		curl_setopt($ch, CURLOPT_POST, $method == 'POST' ? count($params) : false);
-		curl_setopt($ch, CURLOPT_POSTFIELDS, $method == 'POST' ? http_build_query($params) : false);
+		if ($xml_http_request) curl_setopt($ch, CURLOPT_HTTPHEADER, array('X-Requested-With: XMLHttpRequest'));
 		$content = curl_exec($ch);
-		$info    = curl_getinfo($ch);
 
 		preg_match('/^(.*?)\r\n\r\n(.*?)$/msU', $content, $match);
 		$header = $match[1];
 		$content = $match[2];
-
-		/* Armazenamos o PHPSESSID no cookie */
-		if (preg_match('/(PHPSESSID=.*?);/', $header, $match))
-		{
-			$cookie = 'Login='.self::$login.';Auth='.self::$auth.';'.$match[1];
-		}
+		$info = curl_getinfo($ch);
 
 		curl_close($ch);
 		return array($content, $info, $header);
@@ -170,23 +147,15 @@ class Legenda {
 	/**
 	 * Efetua a requisição de um arquivo ao servidor
 	 * @param  string
-	 * @param  bool    true se quer apenas o link para o arquivo
 	 * @return string  Arquivo ou link para o arquivo
 	 */
-	public function download($filename = null, $onlyLink = false)
+	public function download($filename = null)
 	{
-		list($file, $info) = LegendasTV::request("http://legendas.tv/info.php?c=1&d={$this->id}");
-		
-		if (!$onlyLink)
-		{
-			if ($filename === null) $filename = basename($info['url']);
-			$this->data['download_link'] = $info['url'];
-			file_put_contents($filename, $file);
-			return true;
-		}
-		else {
-			return $info['url'];
-		}
+		list($file, $info, $header) = LegendasTV::request("http://legendas.tv/pages/downloadarquivo/{$this->id}");
+		preg_match('/filename="(.*?)"/', $header, $file);
+		if ($filename === null) $filename = $file[1];
+		file_put_contents($filename, $file);
+		return true;
 	}
 
 	/**
