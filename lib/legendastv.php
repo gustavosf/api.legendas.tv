@@ -152,8 +152,11 @@ class Legenda {
 	public function download($filename = null)
 	{
 		list($file, $info, $header) = LegendasTV::request("http://legendas.tv/pages/downloadarquivo/{$this->id}");
-		preg_match('/filename="(.*?)"/', $header, $file);
-		if ($filename === null) $filename = $file[1];
+		if ($filename === null)
+		{
+			preg_match('/filename="(.*?)"/', $header, $filename);
+			$filename = $filename[1];
+		}
 		file_put_contents($filename, $file);
 		return $filename;
 	}
