@@ -1,10 +1,11 @@
 #!/usr/bin/php
 <?php
-define('TORRENTDIR','');
 if($argv[1]){
    if(is_dir($argv[1])){
        define('TORRENTDIR',$argv[1]);
-   }
+   } else {
+       define('TORRENTDIR','');
+   }	
 }
 
 require dirname(__FILE__).'/../lib/legendastv.php';
