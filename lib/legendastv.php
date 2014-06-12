@@ -10,20 +10,19 @@
 class LegendasTV {
 
 	/**
-	 * Alguns dos termos de busca identificados:
-	 *
-	 * termo:%s     - Busca textual
-	 * id_idioma:%d - Filtro por idioma
-	 * id_filme:%d  - Busca por id específico
-	 * page:%d      - Paginação nos resultados
+	 * Página para a busca das legendas
+	 * Link é montado através da combinação $resource/%1/%2/%3 onde:
+	 * %1 = Termo da busca
+	 * %2 = Código da linguagem
+	 * %3 = Tipo de resultados esperados (todos, packs ou destaques apenas)
 	 */
-	private static $resource = 'http://legendas.tv/util/carrega_legendas_busca/';
+	private static $resource = 'http://legendas.tv/util/carrega_legendas_busca/%s/%s/%s';
 
 	/**
 	 * Tradução para as diferentes linguagens que podem ser pesquisadas
 	 */
 	protected static $languages = array(
-		'Qualquer idioma' => '', # default
+		'Qualquer idioma' => '-', # default
 		'Português-BR' => 1,
 		'Inglês' => 2,
 		'Espanhol' => 3,
@@ -44,6 +43,15 @@ class LegendasTV {
 	);
 
 	/**
+	 * Tipos de legendas para pesquisa
+	 */
+	protected static $types = array(
+		'Todos' => '-',
+		'Pack' => 'p',
+		'Destaque' =>'d',
+	);
+
+	/**
 	 * Efetua uma busca por legendas no site do legendas.tv
 	 * @param  string  O conteúdo da busca
 	 * @param  string  A linǵuagem da legenda
@@ -52,21 +60,25 @@ class LegendasTV {
 	 *         Retornar uma coleção de legendas, não um array, com métodos
 	 *         para ordenar por campos como por exemplo, destaque ou downloads
 	 */
-	public static function search($search, $lang = 'Qualquer idioma')
+	public static function search($search, $lang = 'Qualquer idioma', $type = 'Todos')
 	{
 		if (!isset(self::$languages[$lang]))
 		{
 			throw new Exception('Idioma inválido');
 		}
-	
-		list($page) = self::request(self::$resource, true, array(
-			'termo'     => $search,
-			'page'      => 1,
-			'id_filme'  => null,
-			'id_idioma' => self::$languages[$lang],
-		));
+
+		$link = sprintf(self::$resource, urlencode($search), self::$languages[$lang], self::$types[$type]);
+
+		/** funcionamento antigo do sistema (com post). Migrou para GET
+		// list($page) = self::request(self::$resource, true, array(
+		// 	'termo'     => $search,
+		// 	'page'      => 1,
+		// 	'id_filme'  => null,
+		// 	'id_idioma' => self::$languages[$lang],
+		// ));
+		*/
+		list($page) = self::request($link, true);
 		$subtitles = self::parse($page);
-	
 		return $subtitles;
 	}
 
@@ -75,7 +87,7 @@ class LegendasTV {
 	 * @param  string
 	 * @return array  Todas as legendas identificadas
 	 * @todo   Centralizar o parse de outras páginas aqui também.
-	 */
+	*/
 	private static function parse($page)
 	{
 		$regex = '/div class="(.*?)">.*?<a href="(.*?)">(.*?)<.*?p class="data">(\d+?) downloads, nota (\d+?), enviado por .*?>(.*?)<\/a> em (.*?) <\/p>.*?<.*?alt="(.*?)".*?<\/div>/';
@@ -97,7 +109,7 @@ class LegendasTV {
 				'idioma'    => $match[8][$key],
 			));
 		}
-				
+
 		return $parsed;
 	}
 
@@ -105,7 +117,7 @@ class LegendasTV {
 	 * Efetua uma requisição ao site do Legendas.TV
 	 * @param  string
 	 * @param  string GET (default) ou POST
-	 * @param  array  Query a ser enviada por post 
+	 * @param  array  Query a ser enviada por post
 	 * @return array  Array com o Conteúdo da página, info do curl e header
 	 */
 	public static function request($url, $xml_http_request = false, $params = array())
@@ -116,7 +128,7 @@ class LegendasTV {
 		$url = $url.implode('/', $query);
 
 		$ch = curl_init($url);
-		curl_setopt($ch, CURLOPT_HEADER, true); 
+		curl_setopt($ch, CURLOPT_HEADER, true);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
 		if ($xml_http_request) curl_setopt($ch, CURLOPT_HTTPHEADER, array('X-Requested-With: XMLHttpRequest'));
@@ -133,7 +145,7 @@ class LegendasTV {
 }
 
 class Legenda {
-	
+
 	/**
 	 * Dados gerais da legenda
 	 */
