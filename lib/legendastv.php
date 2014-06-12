@@ -23,23 +23,23 @@ class LegendasTV {
 	 */
 	protected static $languages = array(
 		'Qualquer idioma' => '-', # default
-		'Português-BR' => 1,
-		'Inglês' => 2,
-		'Espanhol' => 3,
-		'Português-PT' => 10,
-		'Alemão' => 5,
-		'Árabe' => 11,
-		'Búlgaro' => 15,
-		'Checo' => 12,
-		'Chinês' => 13,
-		'Coreano' => 14,
-		'Dinamarquês' => 7,
-		'Francês' => 4,
-		'Italiano' => 16,
-		'Japonês' => 6,
-		'Norueguês' => 8,
-		'Polonês' => 17,
-		'Sueco' => 9,
+		'Português-BR' => 1, 'ptbr' => 1,
+		'Inglês' => 2, 'en' => 2,
+		'Espanhol' => 3, 'es' => 3,
+		'Português-PT' => 10, 'pt' => 10,
+		'Alemão' => 5, 'gr' => 5,
+		'Árabe' => 11, 'ar' => 11,
+		'Búlgaro' => 15, 'bl' => 15,
+		'Checo' => 12, 'ck' => 12,
+		'Chinês' => 13, 'ch' => 13,
+		'Coreano' => 14, 'kr' => 14,
+		'Dinamarquês' => 7, 'dn' => 7,
+		'Francês' => 4, 'fr' => 4,
+		'Italiano' => 16, 'it' => 16,
+		'Japonês' => 6, 'jp' => 6,
+		'Norueguês' => 8, 'nr' => 8,
+		'Polonês' => 17, 'pl' => 17,
+		'Sueco' => 9, 'sw' => 9,
 	);
 
 	/**
@@ -67,8 +67,6 @@ class LegendasTV {
 			throw new Exception('Idioma inválido');
 		}
 
-		$link = sprintf(self::$resource, urlencode($search), self::$languages[$lang], self::$types[$type]);
-
 		/** funcionamento antigo do sistema (com post). Migrou para GET
 		// list($page) = self::request(self::$resource, true, array(
 		// 	'termo'     => $search,
@@ -77,6 +75,8 @@ class LegendasTV {
 		// 	'id_idioma' => self::$languages[$lang],
 		// ));
 		*/
+		$link = sprintf(self::$resource, urlencode($search), self::$languages[$lang], self::$types[$type]);
+
 		list($page) = self::request($link, true);
 		$subtitles = self::parse($page);
 		return $subtitles;
