@@ -178,6 +178,7 @@ class Legenda {
 			// Alteramos para o nome de arquivo refletir o nome completo da legenda
 			$filename = $this->data['arquivo'].substr($filename, strrpos($filename, '.'));
 		}
+		$filename = str_replace(array('/','\\'),'_', $filename);
 		file_put_contents($filename, $file);
 		return $filename;
 	}
