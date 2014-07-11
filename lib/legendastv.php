@@ -170,7 +170,7 @@ class Legenda {
 			/** Antigo funcionamento. Agora não retorna mais o filename no header
 			// preg_match('/filename="(.*?)"/', $header, $filename);
 			*/
-			preg_match('/Location: http:\/\/f\.legendas\.tv\/l\/(.*)/', $header, $filename);
+			preg_match('/Location: http:\/\/f\.legendas\.tv\/\w\/(.*)/', $header, $filename);
 
 			// O formato abaixo é o nome de retorno do arquivo do legendas.tv, que não diz muita coisa
 			$filename = trim($filename[1]);
