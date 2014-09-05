@@ -56,6 +56,7 @@ class LegendasTV {
 	 * @param  string  O conteúdo da busca
 	 * @param  string  A linǵuagem da legenda
 	 * @return array
+	 * @throws Exception se o idioma for inválido
 	 * @todo   Rolar a oaginação nos resultados da busca
 	 *         Retornar uma coleção de legendas, não um array, com métodos
 	 *         para ordenar por campos como por exemplo, destaque ou downloads
@@ -118,6 +119,7 @@ class LegendasTV {
 	 * @param  string
 	 * @param  string GET (default) ou POST
 	 * @param  array  Query a ser enviada por post
+	 * @throws Exception se o curl não for bem sucedido
 	 * @return array  Array com o Conteúdo da página, info do curl e header
 	 */
 	public static function request($url, $xml_http_request = false, $params = array())
@@ -133,6 +135,8 @@ class LegendasTV {
 		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
 		if ($xml_http_request) curl_setopt($ch, CURLOPT_HTTPHEADER, array('X-Requested-With: XMLHttpRequest'));
 		$content = curl_exec($ch);
+
+		if ($content === false) throw new Exception('Legendas.tv fora do ar');
 
 		preg_match('/^(.*?)\r\n\r\n(.*?)$/msU', $content, $match);
 		$header = $match[1];
@@ -187,6 +191,7 @@ class Legenda {
 	 * Método mágico para retornar informações da Legenda
 	 * @param  string
 	 * @return mixed
+	 * @throws InvalidArgumentException se o parâmetro solicitado não existir
 	 * @todo   Buscar informações extras por demanda através do link
 	 *         info.php sem o parâmetro c
 	 */

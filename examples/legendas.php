@@ -22,7 +22,11 @@ $options = getopt('l:fd', array('first', 'lang::'));
 $search = implode(" ", array_slice($argv, sizeof($options) + 1));
 
 /* Começa a treta :D */
-$subtitles = LegendasTV::search($search, @$options['l'] ?: (@$options['lang'] ?: 'Qualquer idioma'));
+try {
+	$subtitles = LegendasTV::search($search, @$options['l'] ?: (@$options['lang'] ?: 'Qualquer idioma'));
+} catch (Exception $e) {
+	die('Legendas.tv fora do ar');
+}
 
 if (array_key_exists('d', $options))
 { # caso flag "d" esteja ativada retorna apenas os destaques 
