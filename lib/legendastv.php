@@ -115,25 +115,73 @@ class LegendasTV {
 	}
 
 	/**
+	 * Loga um usuario junto ao legendas.tv
+	 * @param  string    $username Nome de usuário no legendas.tv
+	 * @param  string    $password Senha
+	 * @return booelan
+	 * @throws Exception           Em caso de problemas no login
+	 */
+	public static function login($username, $password) {
+		list($content, $info, $header) = static::request('http://legendas.tv/login', false, array(
+			'data[User][username]' => $username,
+			'data[User][password]' => $password,
+		),  'POST');
+		
+		# Trata possíveis erros
+		if (strpos($content, 'Usuário ou senha inválidos') !== false)
+		{
+			# Remover cookies faz com que não caia no captcha, a princípio
+			unlink(__DIR__."/.cookies");
+			throw new Exception('Não foi possível se logar no site: Usuário ou senha inválidos.');
+		}
+		elseif (strpos($content, 'Palavras de segurança incorretas') !== false)
+		{
+			unlink(__DIR__."/.cookies");
+			throw new Exception('Muitas tentativas de login incorretas, captcha encontrado');
+		}
+
+		# Usuário (provavelmente) logado :P
+		return true;
+	}
+
+	/**
 	 * Efetua uma requisição ao site do Legendas.TV
 	 * @param  string
-	 * @param  string GET (default) ou POST
-	 * @param  array  Query a ser enviada por post
-	 * @throws Exception se o curl não for bem sucedido
-	 * @return array  Array com o Conteúdo da página, info do curl e header
+	 * @param  boolean   Req. Ajax
+	 * @param  array     Query a ser enviada por post
+	 * @param  string    GET (default) ou POST
+	 * @return array     Array com o Conteúdo da página, info do curl e header
+	 * @throws Exception Se o curl não for bem sucedido
 	 */
-	public static function request($url, $xml_http_request = false, $params = array())
+	public static function request($url, $xml_http_request = false, $params = array(), $method = 'GET')
 	{
-		$query = array_filter(array_map(function($k, $s) {
-			return $s ? $k.':'.urlencode($s) : null;
-		}, array_keys($params), $params));
-		$url = $url.implode('/', $query);
+		if ($method == 'GET')
+		{
+			$query = array_filter(array_map(function($k, $s) {
+				return $s ? $k.':'.urlencode($s) : null;
+			}, array_keys($params), $params));
+			$url = $url.implode('/', $query);
+		}
+
+		$jar = __DIR__."/.cookies";
+		if(!file_exists($jar)) {
+			$fh = fopen($jar, "w");
+			fwrite($fh, "");
+			fclose($fh);
+		}
 
 		$ch = curl_init($url);
 		curl_setopt($ch, CURLOPT_HEADER, true);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+		curl_setopt($ch, CURLOPT_COOKIEJAR, $jar);
+		curl_setopt($ch, CURLOPT_COOKIEFILE, $jar);
 		if ($xml_http_request) curl_setopt($ch, CURLOPT_HTTPHEADER, array('X-Requested-With: XMLHttpRequest'));
+		if ($method == 'POST') {
+			curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $params);
+		}
+
 		$content = curl_exec($ch);
 
 		if ($content === false) throw new Exception('Legendas.tv fora do ar');

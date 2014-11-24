@@ -18,14 +18,15 @@ function readln()
  * l, lang    language
  * f, first   baixa o primeiro link
  */
-$options = getopt('l:fd', array('first', 'lang::'));
+$options = getopt('l:fd', array('first', 'lang::', 'logged::'));
 $search = implode(" ", array_slice($argv, sizeof($options) + 1));
 
 /* Começa a treta :D */
 try {
+	if (!isset($options['logged'])) LegendasTV::login('__SEU_USERNAME__', '__SUA_SENHA__');
 	$subtitles = LegendasTV::search($search, @$options['l'] ?: (@$options['lang'] ?: 'Qualquer idioma'));
 } catch (Exception $e) {
-	die('Legendas.tv fora do ar');
+	die($e->getMessage());
 }
 
 if (array_key_exists('d', $options))
